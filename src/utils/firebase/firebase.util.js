@@ -3,7 +3,10 @@ import {
   getAuth,
   signInWithPopup,
   signInWithRedirect,
-  GoogleAuthProvider
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signOut
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -21,19 +24,22 @@ const firebaseConfig = {
   appId: "1:439753726958:web:c0af669fd7298225fc4cff"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
+initializeApp(firebaseConfig);
 
 export const auth = getAuth();
-export const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-export const signInGoogleWPopUp = () => signInWithPopup(auth, provider);
+export const signInGoogleWPopUp = () => signInWithPopup(auth, googleProvider);
+export const signInGoogleWRedirect = () => signInWithRedirect(auth, googleProvider);
 
 export const db = getFirestore();
 
-export const createUserDocumentFromAuth = async(userAuth) => {
+export const createUserDocumentFromAuth = async(userAuth, additionalInfo = {}) => {
+  if (!userAuth) return;
+
   const userDocRef = doc(db, 'users', userAuth.uid);
   const userSnapshot = await getDoc(userDocRef);
 
@@ -45,7 +51,8 @@ export const createUserDocumentFromAuth = async(userAuth) => {
       await setDoc(userDocRef, {
         displayName,
         email,
-        createdAt
+        createdAt,
+        ...additionalInfo
       });
     } catch (err) {
       console.log('Create User Firestore Fail.');
@@ -53,4 +60,20 @@ export const createUserDocumentFromAuth = async(userAuth) => {
   }
 
   return userDocRef;
+};
+
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
+
+  return await createUserWithEmailAndPassword(auth, email, password);
+};
+
+export const signInUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
+
+  return await signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signOutUser = async () => {
+  return await signOut(auth);
 };
